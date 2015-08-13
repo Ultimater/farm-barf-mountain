@@ -1,11 +1,16 @@
-//predefine function signatures
+//script info
 script "farm-barf-mountain.ash";
 notify Ultibot;
+string scriptVersion="1.1";
+string scriptLastModified="Aug 13th 2015";
 
+//predefine function signatures
 void main();
 void meatEquipment();
 void maintainBuffs();
+void maintainEquipment();
 
+//define our functiond
 void maintainBuffs()
 {
 	if(have_effect($effect[How to Scam Tourists])==0)
@@ -45,7 +50,7 @@ void maintainBuffs()
 			{
 				cli_execute("buy Knob Goblin nasal spray");
 			}else{
-				abort("Please buy Knob Goblin pet-buffing spray from the mall, or unlock the dispensary.");
+				abort("Please buy Knob Goblin nasal spray from the mall, or unlock the dispensary.");
 			}
 		}
 		if(item_amount($item[Knob Goblin nasal spray])>0)
@@ -58,16 +63,50 @@ void maintainBuffs()
 
 	if(have_effect($effect[Empathy])==0 || have_effect($effect[Polka of Plenty])==0)
 	{
+		boolean waitingForEmpathy=false;
+		boolean waitingForPlenty=false;
 		if(have_effect($effect[Empathy])==0)
 		{
-			cli_execute("/msg Buffy empathy");
+			print('Don\'t have empathy...','blue');
+			chat_private("Buffy", "empathy");
+			print('waiting for Buffy (#1889009) to buff us with empathy','blue');
+			waitingForEmpathy=true;
 		}
 		if(have_effect($effect[Polka of Plenty])==0)
 		{
-			cli_execute("/msg Buffy plenty");
+			print('Don\'t have Plenty...','blue');
+			if(waitingForEmpathy)
+			{
+				print('waiting one second between PMs to Buffy','blue');
+				wait(1);
+			}
+			chat_private("Buffy", "plenty");
+			print('waiting for Buffy (#1889009) to buff us with plenty','blue');
+			waitingForPlenty=true;
 		}
-		print('waiting for Buffy (#1889009) to buff us with empathy and/or plenty','blue');
-		wait(30);
+		int loops=0;
+		while(waitingForEmpathy||waitingForPlenty)
+		{
+			if(loops<10){
+				wait(1);
+			}else{
+				wait(10);
+			}
+			if(have_effect($effect[Empathy])>0){waitingForEmpathy=false;}
+			if(have_effect($effect[Polka of Plenty])>0){waitingForPlenty=false;}
+			if(waitingForEmpathy&&waitingForPlenty)
+			{
+				print('Still waiting on plenty and Empathy','blue');
+			}else{
+				if(waitingForEmpathy){
+					print('Still waiting on Empathy','blue');
+				}
+				if(waitingForPlenty){
+					print('Still waiting on Plenty','blue');
+				}
+			}
+			loops=loops+1;
+		}
 	}
 
 	if(have_effect($effect[Empathy])==0 || have_effect($effect[Polka of Plenty])==0)
@@ -107,11 +146,46 @@ void meatEquipment()
 	}	
 }
 
+void maintainEquipment()
+{
+	boolean checkForBetterEquipment=false;
+	if(equipped_item($slot[familiar])==$item[Snow Suit])
+	{
+		float snowsuitCombats=get_property("_snowSuitCount").to_int();
+		int snowsuitFamilarWeightReduction=snowsuitCombats/5;
+		if(snowsuitFamilarWeightReduction>15){snowsuitFamilarWeightReduction=5;}
+		int snowsuitFamilarWeightBonus=20-snowsuitFamilarWeightReduction;
+		print("Currently have Snow suit equipped giving us +"+to_string(snowsuitFamilarWeightBonus)+" to familar weight. We have completed "+to_string(to_int(snowsuitCombats))+" combats with it",'blue');
+		if(snowsuitCombats > 50) //check to maximize every 5 turns after we're at +10 familiar weight
+		{
+			if(snowsuitCombats % 5 == 0)
+			{
+				print("Snow suit is now at +"+to_string(snowsuitFamilarWeightBonus)+" familiar weight. checking for better equipment",'blue');
+				checkForBetterEquipment=true;
+			}
+		}
+	}
+	if(equipped_item($slot[familiar])==$item[none])
+	{
+		print("Our familiar equipment slot is empty. Checking for better equipment",'blue');
+		checkForBetterEquipment=true;
+	}
+	if(checkForBetterEquipment){
+		meatEquipment();
+	}
+	if(equipped_item($slot[familiar])==$item[none])
+	{
+		print("Our familiar equipment slot is still empty. Aborting....",'red');
+		abort("Familar equipment slot is empty, please fix this manually.");
+	}
+		
+}
 
 boolean doTasks()
 {
-	print("maintaining our buffs");
+	print("maintaining our buffs",'blue');
 	maintainBuffs();
+	maintainEquipment();
 	return true;
 }
 
@@ -122,7 +196,7 @@ boolean mainLoop()
 		print("Burning a turn","blue");
 		if(my_mp()<100)
 		{
-			print("Your MP is less than 100, please recharge manually...");
+			print("Your MP is less than 100, please recharge manually...",'red');
 			abort("Your MP is "+to_string(my_mp())+" which is less than 100, aborting...");
 		}
 		if(have_effect($effect[Beaten Up])>0)
@@ -137,16 +211,17 @@ boolean mainLoop()
 
 void main()
 {
-	print("Making sure our pre-adventure and post-adventure settings are empty");
+	print("Welcome to Ultibot's farm-barf-mountain.ash script version "+scriptVersion+" which was last modified on "+scriptLastModified,'green');
+	print("Making sure our pre-adventure and post-adventure settings are empty",'blue');
 	set_property("afterAdventureScript", "");
 	set_property("betweenAdventureScript", "");
 	set_property("betweenBattleScript", "");
-	print("Setting our combat handler to BarfMountain.ccs, edit the ccs/BarfMountain.ccs file to suit your combat needs");
+	print("Setting our combat handler to BarfMountain.ccs, edit the ccs/BarfMountain.ccs file to suit your combat needs",'blue');
 	cli_execute("ccs BarfMountain");
 	set_property("choiceAdventure1073", "1");
 	if((my_adventures() > 1) && (my_inebriety() <= inebriety_limit()))
 	{
-		print("swapping our equipment");
+		print("swapping our equipment",'blue');
 		meatEquipment();
 		print("Check if you like your current equipment. Press ESC to abort if you see something wrong","blue");
 		print("About to enter the main loop for burning turns at Barf Mountain","blue");
