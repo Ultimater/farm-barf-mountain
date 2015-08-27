@@ -602,4 +602,4 @@ void main()
 		print("either too drunk or no adventures left.","red");
 	}
 	
-}
+}//end main()
