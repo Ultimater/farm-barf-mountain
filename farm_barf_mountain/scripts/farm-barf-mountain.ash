@@ -559,13 +559,14 @@ void main()
 			print('You are running a script version newer than the latest version, skipping script updater...','green');
 		}else if(yourVersionNumber<latestVersionNumber){
 			print('You are NOT running the latest version of this script.','red');
-			print('You are NOT running the latest version of this script.','red');
 			if(user_confirm('You are NOT running the latest version of this farm-barf-mountain.ash.\n\nWould you like the script to update itself now?'))
 			{
 				print('Preparing to update to the latest farm-barf-mountain.ash......','blue');
 				cli_execute('svn delete Ultimater-farm-barf-mountain-branches-master-farm_barf_mountain');
 				cli_execute('svn checkout https://github.com/Ultimater/farm-barf-mountain/branches/master/farm_barf_mountain');
-				abort('Please re-run farm-barf-mountain.ash');
+				print('Update Complete!','green');
+				print('Please re-run farm-barf-mountain.ash','#8f00ff');
+				exit;
 			}else{
 				print('Continuing to run your old version of the script... you can always update manually.','orange');
 			}
