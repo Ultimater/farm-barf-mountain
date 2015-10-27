@@ -7,10 +7,12 @@ record _FarmBarfMountainSettings_
 	string version;
 	string lastModified;
 	boolean eatDrink;
+	boolean checkForUpdates;
 } farmBarfMountainSettings;
-farmBarfMountainSettings.version="1.2";
-farmBarfMountainSettings.lastModified="Aug 26th 2015";
+farmBarfMountainSettings.version="1.3";
+farmBarfMountainSettings.lastModified="Oct 26th 2015";
 farmBarfMountainSettings.eatDrink=false;//this is a default which our user_confirm will override later...
+farmBarfMountainSettings.checkForUpdates=true;//If you run a private build, you can disable this
 
 //predefine function signatures so we can define our functions in any order
 void main();
@@ -512,6 +514,18 @@ boolean doTasks()
 	return true;
 }
 
+boolean initialTasks()
+{
+	if(item_amount($item[Deck of Every Card ])>0)
+	{
+		if(get_property('_deckCardsDrawn').to_int()<=10)
+		{
+			(cli_execute('play knife')^cli_execute('play Ancestral Recall')^cli_execute('play island')||true);
+		}
+	}
+	return true;
+}
+
 boolean mainLoop()
 {
 	while((my_adventures() > 1) && (my_inebriety() <= inebriety_limit()) && doTasks())
@@ -527,6 +541,10 @@ boolean mainLoop()
 			print("Your MP is less than 100, please recharge manually...",'red');
 			abort("Your MP is "+to_string(my_mp())+"/"+to_string(my_maxmp())+" which is less than 100, aborting...");
 		}
+		if(have_effect($effect[QWOPped up])>0)
+		{
+			cli_execute('uneffect QWOPped up');
+		}
 		if(have_effect($effect[Beaten Up])>0)
 		{
 			abort("You are currently beaten up, aborting...");
@@ -541,34 +559,37 @@ void main()
 {
 	string welcomeText="Welcome to Ultibot's farm-barf-mountain.ash v"+farmBarfMountainSettings.version+" ("+farmBarfMountainSettings.lastModified+")";
 	print(welcomeText,'green');
-	print('Checking if you have the latest version....');
-	string latestVersion=visit_url('https://raw.githubusercontent.com/Ultimater/farm-barf-mountain/master/version.txt');
-	if(latestVersion==farmBarfMountainSettings.version)
+	if(farmBarfMountainSettings.checkForUpdates)
 	{
-		print('Good, you are running the latest version.','green');
-	}else{
-		print('Latest version is: '+latestVersion,'orange');
-		float yourVersionNumber=to_float(farmBarfMountainSettings.version);
-		float latestVersionNumber=to_float(latestVersion);
-		if(latestVersionNumber<=0)
+		print('Checking if you have the latest version....');
+		string latestVersion=visit_url('https://raw.githubusercontent.com/Ultimater/farm-barf-mountain/master/version.txt');
+		if(latestVersion==farmBarfMountainSettings.version)
 		{
-			print('Could not convert latest version to a number... skipping script updater...','red');
-		}else if(yourVersionNumber<=0){
-			print('Could not convert your script version to a number, skipping script updater...','red');
-		}else if(yourVersionNumber>latestVersionNumber){
-			print('You are running a script version newer than the latest version, skipping script updater...','green');
-		}else if(yourVersionNumber<latestVersionNumber){
-			print('You are NOT running the latest version of this script.','red');
-			if(user_confirm('You are NOT running the latest version of this farm-barf-mountain.ash.\n\nWould you like the script to update itself now?'))
+			print('Good, you are running the latest version.','green');
+		}else{
+			print('Latest version is: '+latestVersion,'orange');
+			float yourVersionNumber=to_float(farmBarfMountainSettings.version);
+			float latestVersionNumber=to_float(latestVersion);
+			if(latestVersionNumber<=0)
 			{
-				print('Preparing to update to the latest farm-barf-mountain.ash......','blue');
-				cli_execute('svn delete Ultimater-farm-barf-mountain-branches-master-farm_barf_mountain');
-				cli_execute('svn checkout https://github.com/Ultimater/farm-barf-mountain/branches/master/farm_barf_mountain');
-				print('Update Complete!','green');
-				print('Please re-run farm-barf-mountain.ash','#8f00ff');
-				exit;
-			}else{
-				print('Continuing to run your old version of the script... you can always update manually.','orange');
+				print('Could not convert latest version to a number... skipping script updater...','red');
+			}else if(yourVersionNumber<=0){
+				print('Could not convert your script version to a number, skipping script updater...','red');
+			}else if(yourVersionNumber>latestVersionNumber){
+				print('You are running a script version newer than the latest version, skipping script updater...','green');
+			}else if(yourVersionNumber<latestVersionNumber){
+				print('You are NOT running the latest version of this script.','red');
+				if(user_confirm('You are NOT running the latest version of this farm-barf-mountain.ash.\n\nWould you like the script to update itself now?'))
+				{
+					print('Preparing to update to the latest farm-barf-mountain.ash......','blue');
+					cli_execute('svn delete Ultimater-farm-barf-mountain-branches-master-farm_barf_mountain');
+					cli_execute('svn checkout https://github.com/Ultimater/farm-barf-mountain/branches/master/farm_barf_mountain');
+					print('Update Complete!','green');
+					print('Please re-run farm-barf-mountain.ash','#8f00ff');
+					exit;
+				}else{
+					print('Continuing to run your old version of the script... you can always update manually.','orange');
+				}
 			}
 		}
 	}
@@ -593,6 +614,8 @@ void main()
 	set_property("choiceAdventure1073", "1");
 	if((my_adventures() > 1) && (my_inebriety() <= inebriety_limit()))
 	{
+		print("Doing our initial tasks...",'blue');
+		initialTasks();
 		print("swapping our equipment",'blue');
 		meatEquipment();
 		print("Check if you like your current equipment. Press ESC to abort if you see something wrong","blue");
